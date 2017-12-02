@@ -1,54 +1,66 @@
-#include <Dijkstra.H>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include</home/astrid/Escritorio/ALEPH/tpl_graph.H>
+#include <Dijkstra.H>
 using namespace std;
-#define VACIO   'B'
-#define BLOQUE  'W'
+#define VACIO   ' '
+#define BLOQUE  '#'
 char ** tablero;
 int _filas;
 int _columnas;
-using Position = pair<size_t, size_t>;
+using Position = pair<int, int>;
 using Node = Graph_Node<Position>;
 using GT = List_Graph<Node>;
-using Node1 = Graph_Node<char>;
-using GT1 = List_Graph<Node1>;
-void crearLaberinto(int filas,int columnas)
+
+void createMaze(int filas,int columnas)
 {
  	_filas = filas;
  	_columnas = columnas;   
-    
+  int vertices = 0;
+  int x = 0;
+  int y = 0;  
+
     tablero = new char* [filas];
     for( int i = 0 ; i < filas ; i++ )
         tablero[i] = new char [columnas];
-}
 
-void construir(string filename)
-{
-    ifstream file(filename.c_str());
 
-    int filas , columnas;
+  cout<<"CUantos vertices desea ingresar: "<<endl;
+  cin>>vertices;
+  for( int i = 0 ; i < vertices ; i++ )
+    {
+        cout<<"igrese posicion del vertice Numero: "<<i<<endl;
+               cout<<"x: "<<endl;
+               cin>>x;
+               cout<<"y: "<<endl;
+               cin>>y;
+               tablero[x][y] =' ';
+                              
+    }
 
-    file >> filas >> columnas;
-
-    crearLaberinto(filas,columnas);
-
-    for( int i = 0 ; i < filas ; i++ )
-        for( int j = 0 ; j < columnas ; j++ )
+     for( int i = 0 ; i < _filas ; i++ )
+    {
+        for( int j = 0 ; j < _columnas ; j++ )
         {
-            file >> tablero[i][j];
-                
+            if(tablero[i][j] != ' ')
+                tablero[i][j] = '#';
+            
+   
         }
 
-    file.close();
+      
+    }
 }
+
+
 
 void dibujar()
 {
 
     
 
-    for( int i = 0 ; i < _filas ; i++ )
+      for( int i = 0 ; i < _filas ; i++ )
     {
         for( int j = 0 ; j < _columnas ; j++ )
         {
@@ -71,36 +83,42 @@ void dibujar()
 }
 
 void CargarGraph(GT & g){
-
-  int xprev = 0;//posiciones previas al anterior nodo para conocer la distancia "entre nodos"
-  int yprev = 0;
-  int ddistance= 0;
+  
+  GT d; //grafo al cual se le va a colocar el camino con Dijkstra
+  Dijkstra_Min_Paths< GT > l; //Declarando objeto Dijkstra
 	int x = 0;
 	int y = 0;
+  int xprev = 0;//posiciones previas al anterior nodo para conocer la distancia "entre nodos"
+  int yprev = 0;
+  int distance = 0;
 	auto prev = g.insert_node(Position(x,y));
-	auto start = prev;
+	auto start = prev;//nodo para especificar desde donde arrancar el Dijsktra
 	auto next = g.insert_node(Position(x,y));
 
   for( int i = 0 ; i < _filas ; i++ )//recorro el board para saber la posicion de los vertices esquina
     {
         for( int j = 0 ; j < _columnas ; j++ )
         {
-            if(tablero[i][j] == 'B')
+            if(tablero[i][j] == ' ')
             {
               
               next = g.insert_node(Position(i,j));
               
               if(xprev == i ){
-                ddistance = j - yprev;
-                
+                distance = j - yprev;
+                for(int k = 0 ; k < j; k++){
+                  tablero[i][k] = ' ';//simplemente abre camino en la consola
+                }
               }
 
               if(yprev == j){
-                ddistance = i - xprev;
-                
+                distance = i - xprev;
+                 for(int m = 0 ; m < i; m++){
+                  tablero[m][j] = ' '; 
+                }  
               }
-              cout<<"Distance:---"<<ddistance<<endl;
-              g.insert_arc(prev,next,ddistance);
+              cout<<"Distance:---"<<distance<<endl;
+              g.insert_arc(prev,next,distance);
               prev = next;
             xprev = i;
             yprev = j;
@@ -111,31 +129,19 @@ void CargarGraph(GT & g){
 
        
     }      
-next = g.insert_node(Position(_filas,_columnas));
+        
+
+  next = g.insert_node(Position(_filas,_columnas));
 	g.insert_arc(prev,next,6);
 	 
+	/* Usando funcion de Dijsktra en e cual g = es el grafo a buscar camino, star nodo de inicio,
+  next es el nodo end y d el nuevo grafo con el camino minimo*/  
 
+	l.compute_partial_min_paths_tree (g,start,next,d); 
 	 
-	  GT d;
-	  Path <GT> h = g;
-	  Dijkstra_Min_Paths< GT > l;
-   
-// Trabajo en dijkstra aun
-
-	  //l.compute_partial_min_paths_tree (g,start,next,d);
-	 l.paint_partial_min_paths_tree(g,start,next);   
-	 l.find_min_path(g,start,next,h);
-   l.get_min_path(next, h);
-	 //l.compute_min_paths_tree(g,next,d);
-    for (Path <GT>::Iterator it(h); it.has_curr(); it.next())
-    {
-      auto item = it.get_curr();
-      cout << "Node " << (get<0>(item->get_info()), get<1>(item->get_info())) << endl;
-
-    }
 
   // Itera sobre el conjunto completo de nodos
-  for (GT::Node_Iterator it(d); it.has_curr(); it.next())
+  for (GT::Node_Iterator it(d); it.has_curr(); it.next()) // mostrando grafo con camino de Dijkstra
     {
       auto p = it.get_curr();
 
@@ -173,8 +179,6 @@ next = g.insert_node(Position(_filas,_columnas));
       
       cout << (get<0>(p->get_info()), get<1>(p->get_info())) << " -- " << (get<0>(q->get_info()), get<1>(q->get_info()))<< endl;
     }
-
-	//print_graph(d);
 }
 void print_graph(GT & g)
 {
@@ -197,7 +201,9 @@ void print_graph(GT & g)
 	  auto q = ait.get_tgt_node();
 	  
 	  cout << (get<0>(q->get_info()), get<1>(q->get_info()))<<' ';
+	   //q->get_info() << ' ';
 	}
+
       cout << endl;
     }
 
@@ -210,6 +216,9 @@ void print_graph(GT & g)
   for (GT::Arc_Iterator it(g); it.has_curr(); it.next())
     {
       auto a = it.get_curr();
+
+    
+      
       auto p = g.get_src_node(a);
       auto q = g.get_tgt_node(a);
       
@@ -218,10 +227,16 @@ void print_graph(GT & g)
 }
 int main(){
 	GT g;
-	
-	construir("laberinto.txt");
-    dibujar();
+	cout<<"ingrese numero de filas"<<endl;
+  int rows = 0;
+  int cols = 0;
+  cin>>rows;
+  cout<<"ingrese numero de cols"<<endl;
+  cin>>cols;
+	createMaze(rows,cols);
+    
     CargarGraph(g);
+    dibujar();
 	//print_graph(g);
 	return 0;
 }
